@@ -2,7 +2,8 @@
 
 /// <reference types="@fastly/js-compute" />
 // import { CacheOverride } from "fastly:cache-override";
-// import { Logger } from "fastly:logger";
+import { Logger } from "fastly:logger";
+import { HTMLRewritingStream } from "fastly:html-rewriter";
 import { env } from "fastly:env";
 import { includeBytes } from "fastly:experimental";
 
@@ -26,6 +27,14 @@ async function handleRequest(event) {
   // Get the client request.
   const req = event.request;
 
+  // Send a structured line to the Datadog logging endpoint (name must match `fastly logging datadog create --name`).
+  new Logger("datadog").log(JSON.stringify({
+    time: new Date().toISOString(),
+    method: req.method,
+    url: req.url,
+    version: env("FASTLY_SERVICE_VERSION") || "local",
+  }));
+
   // Filter requests that have unexpected methods.
   if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
     return new Response("This method is not allowed", {
@@ -38,6 +47,24 @@ async function handleRequest(event) {
   // Proxy /example to example.com.
   if (url.pathname === "/example") {
     return fetch("https://example.com/", { backend: "example" });
+  }
+
+  // Fetch selectors.html and rewrite it on the fly with HTMLRewritingStream.
+  if (url.pathname === "/selectors") {
+    const upstream = await fetch("https://istiakbinmahmod.github.io/selectors.html", {
+      backend: "github_pages",
+    });
+    const rewriter = new HTMLRewritingStream()
+      .onElement("title", (e) => e.replaceChildren("Rewritten via Fastly Compute"))
+      .onElement("body", (e) =>
+        e.prepend(
+          '<div style="background:#27ae60;color:#fff;padding:12px;font-family:monospace;text-align:center">Modified at the edge by Fastly Compute</div>'
+        )
+      );
+    return new Response(upstream.body.pipeThrough(rewriter), {
+      status: upstream.status,
+      headers: new Headers({ "Content-Type": "text/html; charset=utf-8" }),
+    });
   }
 
   // If request is to the `/` path...

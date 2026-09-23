@@ -16,6 +16,9 @@ service_id = "4xcJEpXWuWl4SffL0eAYIo"
     [local_server.backends.example]
       url = "https://example.com"
 
+    [local_server.backends.github_pages]
+      url = "https://istiakbinmahmod.github.io"
+
 [scripts]
   build = "npm run build"
   post_init = "npm install"

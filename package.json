@@ -2,7 +2,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@fastly/js-compute": "^3.46.0",
+    "@fastly/js-compute": "^4.0.0-pre.1",
     "@napi-rs/lzma-darwin-arm64": "^1.5.1",
     "@oxc-minify/binding-darwin-arm64": "^0.136.0",
     "@rolldown/binding-darwin-arm64": "^1.2.9"
