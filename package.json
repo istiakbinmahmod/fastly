@@ -1,0 +1,18 @@
+{
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@fastly/js-compute": "^3.46.0",
+    "@napi-rs/lzma-darwin-arm64": "^1.5.1",
+    "@oxc-minify/binding-darwin-arm64": "^0.136.0",
+    "@rolldown/binding-darwin-arm64": "^1.2.9"
+  },
+  "devDependencies": {
+    "@fastly/cli": "^16.0.0"
+  },
+  "scripts": {
+    "build": "js-compute-runtime src/index.js bin/main.wasm",
+    "start": "fastly compute serve",
+    "deploy": "fastly compute publish"
+  }
+}

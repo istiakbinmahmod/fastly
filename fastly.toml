@@ -1,0 +1,21 @@
+# This file describes a Fastly Compute package. To learn more visit:
+# https://www.fastly.com/documentation/reference/compute/fastly-toml
+
+authors = ["istiakmahmod842@gmail.com"]
+cloned_from = "https://github.com/fastly/compute-starter-kits/tree/main/starter-kits/javascript/default"
+description = "Demo fastly compute project"
+language = "javascript"
+manifest_version = 3
+name = "my-edge-demo"
+service_id = "4xcJEpXWuWl4SffL0eAYIo"
+
+[local_server]
+
+  [local_server.backends]
+
+    [local_server.backends.example]
+      url = "https://example.com"
+
+[scripts]
+  build = "npm run build"
+  post_init = "npm install"
