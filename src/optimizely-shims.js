@@ -9,6 +9,9 @@ import { HTMLRewritingStream } from "fastly:html-rewriter";
 // hostname, used by the library for the "control" fetch) goes to the origin.
 // Every backend here must exist in fastly.toml (local) and on the service (prod).
 export const ORIGIN_BACKEND = "github_pages";
+// Real origin host. The library's control fetch uses this service's own hostname,
+// but the origin (GitHub Pages) routes by Host header, so we must rewrite it.
+const ORIGIN_HOST = "istiakbinmahmod.github.io";
 const BACKENDS = {
   "cdn.optimizely.com": "optimizely_cdn", // datafile
   "logx.optimizely.com": "optimizely_logx", // tracking events
@@ -19,9 +22,18 @@ const BACKENDS = {
 // HTML rewriter sees plain HTML (Fastly can only auto-decompress gzip).
 const realFetch = globalThis.fetch;
 globalThis.fetch = (input, init) => {
-  const req = new Request(input, init);
+  let req = new Request(input, init);
   const backend = BACKENDS[new URL(req.url).hostname] ?? ORIGIN_BACKEND;
-  if (backend === ORIGIN_BACKEND) req.headers.set("Accept-Encoding", "gzip");
+  if (backend === ORIGIN_BACKEND) {
+    // Compute derives the origin Host/SNI from the URL (backend override_host is
+    // ignored for fetch), so rewrite the URL host to the real origin; keep path/query.
+    const u = new URL(req.url);
+    u.protocol = "https:";
+    u.hostname = ORIGIN_HOST;
+    u.port = "";
+    req = new Request(u, req);
+    req.headers.set("Accept-Encoding", "gzip");
+  }
   return realFetch(req, { backend, fastly: { decompressGzip: true } });
 };
 
