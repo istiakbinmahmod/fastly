@@ -13,11 +13,18 @@ service_id = "4xcJEpXWuWl4SffL0eAYIo"
 
   [local_server.backends]
 
-    [local_server.backends.example]
-      url = "https://example.com"
-
+    # Origin site that experiments run against.
     [local_server.backends.github_pages]
       url = "https://istiakbinmahmod.github.io"
+      override_host = "istiakbinmahmod.github.io"
+
+    # Optimizely datafile.
+    [local_server.backends.optimizely_cdn]
+      url = "https://cdn.optimizely.com"
+
+    # Optimizely tracking events.
+    [local_server.backends.optimizely_logx]
+      url = "https://logx.optimizely.com"
 
 [scripts]
   build = "npm run build"
