@@ -28,11 +28,15 @@ async function handleRequest(event) {
   const req = event.request;
 
   // Send a structured line to the Datadog logging endpoint (name must match `fastly logging datadog create --name`).
+  // `ddsource`/`service` are Datadog reserved attributes — they drive the source and service facets,
+  // so these logs show up under service:my-edge-demo like other services do.
   new Logger("datadog").log(JSON.stringify({
-    time: new Date().toISOString(),
+    ddsource: "fastly",
+    service: "fastly-edge-demo",
+    ddtags: `env:production,version:${env("FASTLY_SERVICE_VERSION") || "local"}`,
+    date: new Date().toISOString(),
     method: req.method,
     url: req.url,
-    version: env("FASTLY_SERVICE_VERSION") || "local",
   }));
 
   // Filter requests that have unexpected methods.
