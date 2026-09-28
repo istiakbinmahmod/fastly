@@ -20,6 +20,9 @@ function emit(level, message, fields) {
     date: new Date().toISOString(),
     level,
     message,
+    // Unique per request (Fastly sets it per invocation), so every line for one
+    // request, ours and the library's, shares it. Filter with @request_id:<id>.
+    request_id: env("FASTLY_TRACE_ID"),
     ...fields,
   });
   sink.log(line); // -> Datadog

@@ -2,6 +2,7 @@
 import "./optimizely-shims.js"; // must stay first: polyfills fetch/HTMLRewriter for the library
 import { applyExperiments } from "@optimizely/edge-delivery";
 import { log } from "./logger.js";
+import { env } from "fastly:env";
 
 // Optimizely Web Experimentation project snippet.
 const SNIPPET_ID = "5905767218282496";
@@ -17,9 +18,14 @@ async function handleRequest(event) {
   request.headers.set("X-Forwarded-For", event.client.address);
 
   // The FetchEvent is a valid "context": the library only needs waitUntil() (tracking events).
-  return applyExperiments(request, event, {
+  const response = await applyExperiments(request, event, {
     snippetId: SNIPPET_ID,
     environment: "prod",
     logLevel: "info",
   });
+
+  // Expose the id logged as request_id, so a request seen in the browser can be found in Datadog.
+  const withId = new Response(response.body, response);
+  withId.headers.set("x-request-id", env("FASTLY_TRACE_ID"));
+  return withId;
 }
