@@ -11,10 +11,12 @@ addEventListener("fetch", (event) => event.respondWith(handleRequest(event)));
 
 async function handleRequest(event) {
   log.info("request", { method: event.request.method, url: event.request.url });
+  // log geolocation
+  log.info("geolocation", { geo: event.client.geo });
 
   // Compute sets no client-IP header; the library reads the visitor IP (IP targeting,
   // tracking) from X-Forwarded-For, so set it from the real connection.
-  const request = new Request(event.request);
+  const request = new Request(event.request, { cf: toCloudflareGeo(event.client.geo) });
   request.headers.set("X-Forwarded-For", event.client.address);
 
   // The FetchEvent is a valid "context": the library only needs waitUntil() (tracking events).
@@ -28,4 +30,18 @@ async function handleRequest(event) {
   const withId = new Response(response.body, response);
   withId.headers.set("x-request-id", env("FASTLY_TRACE_ID"));
   return withId;
+}
+
+// Fastly geolocation -> the request.cf fields the library reads for location audiences.
+// Codes (country "BD", continent "AS", ISO 3166-2 region) match Optimizely's location values.
+// ponytail: no `timezone` — Fastly only gives a numeric utc_offset and the library needs an IANA
+// zone, so time-of-day audiences still don't match. Add once an offset->zone mapping is verified.
+function toCloudflareGeo(geo) {
+  return {
+    continent: geo?.continent ?? "",
+    country: geo?.country_code ?? "",
+    region: geo?.region ?? "",
+    city: geo?.city ?? "",
+    metroCode: geo?.metro_code ? String(geo.metro_code) : "",
+  };
 }

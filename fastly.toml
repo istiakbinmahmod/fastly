@@ -26,6 +26,20 @@ service_id = "4xcJEpXWuWl4SffL0eAYIo"
     [local_server.backends.optimizely_logx]
       url = "https://logx.optimizely.com"
 
+  # Local-only geolocation: `fastly compute serve` sees every client as 127.0.0.1,
+  # so pin it to Dhaka to exercise location audiences.
+  [local_server.geolocation]
+    format = "inline-toml"
+
+    [local_server.geolocation.addresses]
+
+      [local_server.geolocation.addresses."127.0.0.1"]
+        city = "Dhaka"
+        continent = "AS"
+        country_code = "BD"
+        region = "13"
+        utc_offset = 600
+
 [scripts]
   build = "npm run build"
   post_init = "npm install"

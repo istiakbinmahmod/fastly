@@ -17,6 +17,18 @@ const BACKENDS = {
   "logx.optimizely.com": "optimizely_logx", // tracking events
 };
 
+// 0. Request.cf: the library finds geo (location audiences) and picks its runtime
+// (selector support) from Cloudflare's request.cf. It copies requests via
+// new Request(url, { cf: request.cf }), and Fastly's Request drops unknown init
+// keys, so keep `cf` across copies. index.js fills it from Fastly geolocation.
+globalThis.Request = class extends Request {
+  constructor(input, init) {
+    super(input, init);
+    const cf = init?.cf ?? input?.cf;
+    if (cf !== undefined) this.cf = cf;
+  }
+};
+
 // 1. fetch(): Fastly has no default egress, so route every library fetch to a
 // named backend. Origin responses are forced to gzip and decompressed so the
 // HTML rewriter sees plain HTML (Fastly can only auto-decompress gzip).
@@ -78,9 +90,8 @@ class FastlyHTMLRewriter {
   transform(response) {
     const stream = new HTMLRewritingStream();
     for (const [selector, handler] of this.#handlers) {
-      // ponytail: the library can't detect Fastly (runtime "unknown"), so it doesn't filter out
-      // selectors lol-html rejects (~, +, ::). They're skipped here instead of deferred to the
-      // browser; goes away once the library gets a Fastly runtime branch.
+      // With request.cf set the library applies Cloudflare's selector rules (same lol-html
+      // engine), so unsupported selectors are already deferred to the browser. This is a guard.
       try {
         stream.onElement(selector, (el) => handler.element?.(wrapElement(el)));
       } catch (e) {
